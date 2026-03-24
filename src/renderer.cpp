@@ -70,6 +70,8 @@ namespace Renderer
         if (area >= 0.0f)
             return;
 
+        float invArea = 1.0f / area;
+
         // Define bounding box
         int minX = std::min(tri.v[0].x, std::min(tri.v[1].x, tri.v[2].x));
         int maxX = std::max(tri.v[0].x, std::max(tri.v[1].x, tri.v[2].x));
@@ -110,9 +112,9 @@ namespace Renderer
                 bool inside = (e0 <= 0 && e1 <= 0 && e2 <= 0);
                 if (inside)
                 {
-                    float w0 = e1 / area;
-                    float w1 = e2 / area;
-                    float w2 = e0 / area;
+                    float w0 = e1 * invArea;
+                    float w1 = e2 * invArea;
+                    float w2 = e0 * invArea;
 
                     float invW =
                         w0 * tri.v[0].w +
