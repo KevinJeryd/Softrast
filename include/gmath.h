@@ -43,7 +43,8 @@ namespace GMath
     {
         int x;
         int y;
-        int z;
+        float z;
+        float w;
     };
 
     struct ScreenTriangle

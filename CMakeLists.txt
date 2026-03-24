@@ -29,3 +29,9 @@ if(TARGET SDL3::SDL3main)
     target_link_libraries(softrast PRIVATE SDL3::SDL3main)
 endif()
     target_link_libraries(softrast PRIVATE SDL3::SDL3)
+
+add_custom_command(TARGET softrast POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    $<TARGET_FILE:SDL3::SDL3>
+    $<TARGET_FILE_DIR:softrast>
+)

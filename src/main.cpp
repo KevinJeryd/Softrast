@@ -12,9 +12,9 @@ GMath::Vec3 const &eye{0, 0, 2};
 GMath::Mat4 createMVPMatrix(int winWidth, int winHeight)
 {
     // Setup model matrix
-    GMath::Vec3 const &translation{0.3, -0.8, 0};
+    GMath::Vec3 const &translation{0, -1, 0};
     GMath::Vec3 const &rotation{0, 0, 0};
-    GMath::Vec3 const &scale{1.5, 1.5, 1.5};
+    GMath::Vec3 const &scale{1, 1, 1};
     GMath::Mat4 modelMatrix = GMath::modelMatrix(translation, rotation, scale);
 
     // Setup view matrix
@@ -39,8 +39,8 @@ int main(int argc, char *argv[])
     GMath::Vec3 lightDir = GMath::norm({0, 1, 1});
 
     // Setup SDL
-    constexpr int winWidth = 800;
-    constexpr int winHeight = 600;
+    constexpr int winWidth = 1200;
+    constexpr int winHeight = 800;
     Renderer::RenderContext ctx = Renderer::initSDL(winWidth, winHeight);
 
     // Combine to one matrix
@@ -57,15 +57,12 @@ int main(int argc, char *argv[])
     while (running)
     {
         std::fill(ctx.pixels.begin(), ctx.pixels.end(), 0xFF000000);
-        std::fill(ctx.depthBuffer.begin(), ctx.depthBuffer.end(), std::numeric_limits<float>::max());
+        std::fill(ctx.depthBuffer.begin(), ctx.depthBuffer.end(), 1.0f);
 
         for (int i = 0; i < triangles.size(); i++)
         {
-            if (Renderer::backFaceCull(triangles[i], eye))
-            {
-                uint32_t color = Renderer::flatShade(triangles[i], lightDir);
-                Renderer::fillTriangle(screenTris[i], ctx.pixels, ctx.depthBuffer, winWidth, winHeight, color);
-            }
+            uint32_t color = Renderer::flatShade(triangles[i], lightDir);
+            Renderer::fillTriangle(screenTris[i], ctx.pixels, ctx.depthBuffer, winWidth, winHeight, color);
         }
 
         SDL_Event event;
@@ -73,7 +70,7 @@ int main(int argc, char *argv[])
             if (event.type == SDL_EVENT_QUIT)
                 running = false;
 
-        SDL_UpdateTexture(ctx.texture, nullptr, ctx.pixels.data(), 800 * sizeof(uint32_t));
+        SDL_UpdateTexture(ctx.texture, nullptr, ctx.pixels.data(), winWidth * sizeof(uint32_t));
         SDL_RenderTexture(ctx.renderer, ctx.texture, nullptr, nullptr);
         SDL_RenderPresent(ctx.renderer);
     }

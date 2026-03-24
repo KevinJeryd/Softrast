@@ -10,7 +10,7 @@ namespace Renderer
             throw std::runtime_error(SDL_GetError());
         }
 
-        SDL_Window *window = SDL_CreateWindow("Rasterizer", 800, 600, 0);
+        SDL_Window *window = SDL_CreateWindow("Rasterizer", width, height, 0);
         if (!window)
         {
             throw std::runtime_error(SDL_GetError());
@@ -25,14 +25,14 @@ namespace Renderer
         SDL_Texture *texture = SDL_CreateTexture(renderer,
                                                  SDL_PIXELFORMAT_ARGB8888,
                                                  SDL_TEXTUREACCESS_STREAMING,
-                                                 800, 600);
+                                                 width, height);
         if (!texture)
         {
             throw std::runtime_error(SDL_GetError());
         }
 
         std::vector<uint32_t> pixels(width * height, 0xFF000000);
-        std::vector<float> depthBuffer(width * height, std::numeric_limits<float>::max());
+        std::vector<float> depthBuffer(width * height, 1.0f);
 
         return {window, renderer, texture, pixels, depthBuffer};
     }
@@ -43,6 +43,7 @@ namespace Renderer
         for (int i = 0; i < 3; i++)
         {
             GMath::Vec4 clipPoint = MVP * GMath::Vec4{tri.v[i].points.x, tri.v[i].points.y, tri.v[i].points.z, 1.0f};
+            float clipW = clipPoint.w;
 
             // Perspective divide
             clipPoint = clipPoint / clipPoint.w;
@@ -54,14 +55,21 @@ namespace Renderer
             screenTri.v[i].x = screen_x;
             screenTri.v[i].y = screen_y;
             screenTri.v[i].z = clipPoint.z;
+            screenTri.v[i].w = 1.0f / clipW;
         }
-
         return screenTri;
     }
 
     // https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/rasterization-stage.html
     void fillTriangle(GMath::ScreenTriangle const &tri, std::vector<uint32_t> &pixels, std::vector<float> &depthBuffer, int const width, int const height, uint32_t color)
     {
+        float area = (tri.v[1].x - tri.v[0].x) * (tri.v[2].y - tri.v[0].y) -
+                     (tri.v[1].y - tri.v[0].y) * (tri.v[2].x - tri.v[0].x);
+
+        // Back-face cull: with Y-down screen coords, front-facing (CW) triangles have area > 0
+        if (area >= 0.0f)
+            return;
+
         // Define bounding box
         int minX = std::min(tri.v[0].x, std::min(tri.v[1].x, tri.v[2].x));
         int maxX = std::max(tri.v[0].x, std::max(tri.v[1].x, tri.v[2].x));
@@ -99,16 +107,20 @@ namespace Renderer
             int e2 = e2_row;
             for (int x = minX; x <= maxX; ++x)
             {
-                bool inside = (e0 >= 0 && e1 >= 0 && e2 >= 0) ||
-                              (e0 <= 0 && e1 <= 0 && e2 <= 0);
+                bool inside = (e0 <= 0 && e1 <= 0 && e2 <= 0);
                 if (inside)
                 {
-                    float total = e0 + e1 + e2;
-                    float w0 = e0 / total;
-                    float w1 = e1 / total;
-                    float w2 = e2 / total;
+                    float w0 = e1 / area;
+                    float w1 = e2 / area;
+                    float w2 = e0 / area;
+
+                    float invW =
+                        w0 * tri.v[0].w +
+                        w1 * tri.v[1].w +
+                        w2 * tri.v[2].w;
 
                     float depth = w0 * tri.v[0].z + w1 * tri.v[1].z + w2 * tri.v[2].z;
+
                     if (depth < depthBuffer[y * width + x])
                     {
                         pixels[y * width + x] = color;
@@ -223,41 +235,17 @@ namespace Renderer
     {
         GMath::Vec3 edge1 = tri.v[1].points - tri.v[0].points;
         GMath::Vec3 edge2 = tri.v[2].points - tri.v[0].points;
-        GMath::Vec3 normal = GMath::norm(-GMath::cross(edge1, edge2));
+        GMath::Vec3 normal = GMath::norm(GMath::cross(edge1, edge2));
 
         float lightAngle = GMath::dot(normal, lightDir);
-        lightAngle = (lightAngle + 1) / 2; // Remap from -1, 1 to 0, 1 range
+        lightAngle = (lightAngle + 1) / 2;
 
         float ambient = 0.1f;
         float brightness = (ambient + (1.0f - ambient) * lightAngle);
 
-        // Pack brightness into color
         uint8_t r = ((tri.color >> 16) & 0xFF) * brightness;
         uint8_t g = ((tri.color >> 8) & 0xFF) * brightness;
         uint8_t b = ((tri.color) & 0xFF) * brightness;
-        uint32_t color = (0xFF << 24) | (r << 16) | (g << 8) | b;
-
-        return color;
-    }
-
-    bool backFaceCull(GMath::Triangle const &tri, GMath::Vec3 const &eyePos)
-    {
-        float cx = (tri.v[0].points.x + tri.v[1].points.x + tri.v[2].points.x) / 3.0f;
-        float cy = (tri.v[0].points.y + tri.v[1].points.y + tri.v[2].points.y) / 3.0f;
-        float cz = (tri.v[0].points.z + tri.v[1].points.z + tri.v[2].points.z) / 3.0f;
-        GMath::Vec3 center{cx, cy, cz};
-
-        GMath::Vec3 viewDir = eyePos - center;
-
-        GMath::Vec3 edge1 = tri.v[1].points - tri.v[0].points;
-        GMath::Vec3 edge2 = tri.v[2].points - tri.v[0].points;
-        GMath::Vec3 normal = GMath::norm(-GMath::cross(edge1, edge2));
-
-        if (GMath::dot(normal, viewDir) < 0)
-        {
-            return false;
-        }
-
-        return true;
+        return (0xFF << 24) | (r << 16) | (g << 8) | b;
     }
 }

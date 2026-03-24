@@ -29,6 +29,15 @@ namespace ObjParser
                 int i = std::stoi(t1);
                 int j = std::stoi(t2);
                 int k = std::stoi(t3);
+
+                // Convert negative (relative) indices to positive (absolute)
+                if (i < 0)
+                    i = vertices.size() + i + 1;
+                if (j < 0)
+                    j = vertices.size() + j + 1;
+                if (k < 0)
+                    k = vertices.size() + k + 1;
+
                 GMath::Vertex p1 = vertices[i - 1];
                 GMath::Vertex p2 = vertices[j - 1];
                 GMath::Vertex p3 = vertices[k - 1];
