@@ -6,24 +6,18 @@
 #include "../include/renderer.h"
 #include "../include/objParser.h"
 
-GMath::Vertex p1{3, 3, -3};
-GMath::Vertex p2{-3, 3, -3};
-GMath::Vertex p3{0, 0, -3};
-
-uint32_t triangleColor = 0xFF32E300;
-GMath::Triangle testTri{p1, p2, p3, triangleColor};
+GMath::Vec3 const &eye{0, 0, 2};
 
 // TODO: Don't hardcode values later
 GMath::Mat4 createMVPMatrix(int winWidth, int winHeight)
 {
     // Setup model matrix
-    GMath::Vec3 const &translation{0, 0, 0};
+    GMath::Vec3 const &translation{0.3, -0.8, 0};
     GMath::Vec3 const &rotation{0, 0, 0};
-    GMath::Vec3 const &scale{1, 1, 1};
+    GMath::Vec3 const &scale{1.5, 1.5, 1.5};
     GMath::Mat4 modelMatrix = GMath::modelMatrix(translation, rotation, scale);
 
     // Setup view matrix
-    GMath::Vec3 const &eye{0, 0, 2};
     GMath::Vec3 const &target{0, 0, 0};
     GMath::Vec3 const &up{0, 1, 0};
     GMath::Mat4 viewMatrix = GMath::viewMatrix(eye, target, up);
@@ -63,10 +57,15 @@ int main(int argc, char *argv[])
     while (running)
     {
         std::fill(ctx.pixels.begin(), ctx.pixels.end(), 0xFF000000);
+        std::fill(ctx.depthBuffer.begin(), ctx.depthBuffer.end(), std::numeric_limits<float>::max());
+
         for (int i = 0; i < triangles.size(); i++)
         {
-            uint32_t color = Renderer::flatShade(triangles[i], lightDir);
-            Renderer::fillTriangle(screenTris[i], ctx.pixels, winWidth, winHeight, color);
+            if (Renderer::backFaceCull(triangles[i], eye))
+            {
+                uint32_t color = Renderer::flatShade(triangles[i], lightDir);
+                Renderer::fillTriangle(screenTris[i], ctx.pixels, ctx.depthBuffer, winWidth, winHeight, color);
+            }
         }
 
         SDL_Event event;

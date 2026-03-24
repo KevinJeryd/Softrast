@@ -32,8 +32,9 @@ namespace Renderer
         }
 
         std::vector<uint32_t> pixels(width * height, 0xFF000000);
+        std::vector<float> depthBuffer(width * height, std::numeric_limits<float>::max());
 
-        return {window, renderer, texture, pixels};
+        return {window, renderer, texture, pixels, depthBuffer};
     }
 
     GMath::ScreenTriangle toScreenSpace(GMath::Triangle const &tri, GMath::Mat4 const &MVP, int winWidth, int winHeight)
@@ -52,13 +53,14 @@ namespace Renderer
 
             screenTri.v[i].x = screen_x;
             screenTri.v[i].y = screen_y;
+            screenTri.v[i].z = clipPoint.z;
         }
 
         return screenTri;
     }
 
     // https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/rasterization-stage.html
-    void fillTriangle(GMath::ScreenTriangle const &tri, std::vector<uint32_t> &pixels, int const width, int const height, uint32_t color)
+    void fillTriangle(GMath::ScreenTriangle const &tri, std::vector<uint32_t> &pixels, std::vector<float> &depthBuffer, int const width, int const height, uint32_t color)
     {
         // Define bounding box
         int minX = std::min(tri.v[0].x, std::min(tri.v[1].x, tri.v[2].x));
@@ -95,14 +97,23 @@ namespace Renderer
             int e0 = e0_row;
             int e1 = e1_row;
             int e2 = e2_row;
-
             for (int x = minX; x <= maxX; ++x)
             {
                 bool inside = (e0 >= 0 && e1 >= 0 && e2 >= 0) ||
                               (e0 <= 0 && e1 <= 0 && e2 <= 0);
                 if (inside)
                 {
-                    pixels[y * width + x] = color;
+                    float total = e0 + e1 + e2;
+                    float w0 = e0 / total;
+                    float w1 = e1 / total;
+                    float w2 = e2 / total;
+
+                    float depth = w0 * tri.v[0].z + w1 * tri.v[1].z + w2 * tri.v[2].z;
+                    if (depth < depthBuffer[y * width + x])
+                    {
+                        pixels[y * width + x] = color;
+                        depthBuffer[y * width + x] = depth;
+                    }
                 }
 
                 e0 += dE0_dx;
@@ -212,7 +223,7 @@ namespace Renderer
     {
         GMath::Vec3 edge1 = tri.v[1].points - tri.v[0].points;
         GMath::Vec3 edge2 = tri.v[2].points - tri.v[0].points;
-        GMath::Vec3 normal = GMath::norm(GMath::cross(edge1, edge2));
+        GMath::Vec3 normal = GMath::norm(-GMath::cross(edge1, edge2));
 
         float lightAngle = GMath::dot(normal, lightDir);
         lightAngle = (lightAngle + 1) / 2; // Remap from -1, 1 to 0, 1 range
@@ -227,5 +238,26 @@ namespace Renderer
         uint32_t color = (0xFF << 24) | (r << 16) | (g << 8) | b;
 
         return color;
+    }
+
+    bool backFaceCull(GMath::Triangle const &tri, GMath::Vec3 const &eyePos)
+    {
+        float cx = (tri.v[0].points.x + tri.v[1].points.x + tri.v[2].points.x) / 3.0f;
+        float cy = (tri.v[0].points.y + tri.v[1].points.y + tri.v[2].points.y) / 3.0f;
+        float cz = (tri.v[0].points.z + tri.v[1].points.z + tri.v[2].points.z) / 3.0f;
+        GMath::Vec3 center{cx, cy, cz};
+
+        GMath::Vec3 viewDir = eyePos - center;
+
+        GMath::Vec3 edge1 = tri.v[1].points - tri.v[0].points;
+        GMath::Vec3 edge2 = tri.v[2].points - tri.v[0].points;
+        GMath::Vec3 normal = GMath::norm(-GMath::cross(edge1, edge2));
+
+        if (GMath::dot(normal, viewDir) < 0)
+        {
+            return false;
+        }
+
+        return true;
     }
 }
