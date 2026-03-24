@@ -6,7 +6,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(softrast)
 
-target_sources(softrast PRIVATE src/main.cpp)
+target_sources(softrast PRIVATE 
+                src/main.cpp
+                src/renderer.cpp
+                )
 
 target_include_directories(softrast PRIVATE include)
 

@@ -50,7 +50,7 @@ namespace GMath
     };
 
     // Mat4 operations
-    Mat4 operator*(Mat4 const &a, Mat4 const &b)
+    inline Mat4 operator*(Mat4 const &a, Mat4 const &b)
     {
         Mat4 result{};
         for (int row = 0; row < 4; row++)
@@ -67,7 +67,7 @@ namespace GMath
     }
 
     // Vec4 operations
-    Vec4 operator*(const Mat4 &m, const Vec4 &v)
+    inline Vec4 operator*(const Mat4 &m, const Vec4 &v)
     {
         return Vec4{
             m.m[0] * v.x + m.m[1] * v.y + m.m[2] * v.z + m.m[3] * v.w,
@@ -76,33 +76,33 @@ namespace GMath
             m.m[12] * v.x + m.m[13] * v.y + m.m[14] * v.z + m.m[15] * v.w};
     }
 
-    Vec4 operator*(Vec4 const &v, float s)
+    inline Vec4 operator*(Vec4 const &v, float s)
     {
         return Vec4{v.x * s, v.y * s, v.z * s, v.w * s};
     }
 
-    Vec4 operator/(Vec4 const &v, float s)
+    inline Vec4 operator/(Vec4 const &v, float s)
     {
         return Vec4{v.x / s, v.y / s, v.z / s, v.w / s};
     }
 
-    Vec4 operator+(Vec4 const &v1, Vec4 const &v2)
+    inline Vec4 operator+(Vec4 const &v1, Vec4 const &v2)
     {
         return Vec4{v1.x + v2.x, v1.y + v2.y, v1.z + v2.z, v1.w + v2.w};
     }
 
-    Vec4 operator-(Vec4 const &v1, Vec4 const &v2)
+    inline Vec4 operator-(Vec4 const &v1, Vec4 const &v2)
     {
         return Vec4{v1.x - v2.x, v1.y - v2.y, v1.z - v2.z, v1.w - v2.w};
     }
 
-    Vec4 operator-(Vec4 const &v)
+    inline Vec4 operator-(Vec4 const &v)
     {
         return Vec4{-v.x, -v.y, -v.z, -v.w};
     }
 
     // Vec3 Operations
-    Vec3 cross(Vec3 const &v1, Vec3 const &v2)
+    inline Vec3 cross(Vec3 const &v1, Vec3 const &v2)
     {
         float x = (v1.y * v2.z) - (v1.z * v2.y);
         float y = (v1.z * v2.x) - (v1.x * v2.z);
@@ -110,32 +110,32 @@ namespace GMath
         return Vec3{x, y, z};
     }
 
-    Vec3 operator+(Vec3 const &v1, Vec3 const &v2)
+    inline Vec3 operator+(Vec3 const &v1, Vec3 const &v2)
     {
         return Vec3{v1.x + v2.x, v1.y + v2.y, v1.z + v2.z};
     }
 
-    Vec3 operator-(Vec3 const &v1, Vec3 const &v2)
+    inline Vec3 operator-(Vec3 const &v1, Vec3 const &v2)
     {
         return Vec3{v1.x - v2.x, v1.y - v2.y, v1.z - v2.z};
     }
 
-    Vec3 operator-(Vec3 const &v)
+    inline Vec3 operator-(Vec3 const &v)
     {
         return Vec3{-v.x, -v.y, -v.z};
     }
 
-    Vec3 operator*(Vec3 const &v, float s)
+    inline Vec3 operator*(Vec3 const &v, float s)
     {
         return Vec3{v.x * s, v.y * s, v.z * s};
     }
 
-    float dot(Vec3 const &v1, Vec3 const &v2)
+    inline float dot(Vec3 const &v1, Vec3 const &v2)
     {
         return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
     }
 
-    Vec3 norm(Vec3 const &v)
+    inline Vec3 norm(Vec3 const &v)
     {
         float length = std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
         if (length == 0.0f)
@@ -145,7 +145,7 @@ namespace GMath
     }
 
     // Helpers
-    Mat4 identity()
+    inline Mat4 identity()
     {
         Mat4 m{};
         m.m[0] = 1.0f;
@@ -155,7 +155,7 @@ namespace GMath
         return m;
     }
 
-    Mat4 rotationX(float angle)
+    inline Mat4 rotationX(float angle)
     {
         Mat4 m = identity();
         m.m[5] = std::cos(angle);
@@ -165,7 +165,7 @@ namespace GMath
         return m;
     }
 
-    Mat4 rotationY(float angle)
+    inline Mat4 rotationY(float angle)
     {
         Mat4 m = identity();
         m.m[0] = std::cos(angle);
@@ -175,7 +175,7 @@ namespace GMath
         return m;
     }
 
-    Mat4 rotationZ(float angle)
+    inline Mat4 rotationZ(float angle)
     {
         Mat4 m = identity();
         m.m[0] = std::cos(angle);
@@ -187,7 +187,7 @@ namespace GMath
 
     // Transforms
     // Transform from object space to world space.
-    Mat4 modelMatrix(Vec3 const &t, Vec3 const &r, Vec3 const &s)
+    inline Mat4 modelMatrix(Vec3 const &t, Vec3 const &r, Vec3 const &s)
     {
         Mat4 translation = identity();
         translation.m[3] = t.x;
@@ -206,7 +206,7 @@ namespace GMath
 
     // https://www.3dgep.com/understanding-the-view-matrix/
     // Transform from world space to view/camera space
-    Mat4 viewMatrix(Vec3 const &eye, Vec3 const &target, Vec3 const &up)
+    inline Mat4 viewMatrix(Vec3 const &eye, Vec3 const &target, Vec3 const &up)
     {
         // Build the three axes of the camera's coordinate system
         // Forward points from target back toward the eye (camera looks down -Z)
@@ -239,7 +239,7 @@ namespace GMath
     }
 
     // Transform from view space to clip space
-    Mat4 projectionMatrix(float fov, float aspect, float near, float far)
+    inline Mat4 projectionMatrix(float fov, float aspect, float near, float far)
     {
         float tanHalfFov = std::tan(fov / 2.0f);
 
