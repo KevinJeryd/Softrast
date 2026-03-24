@@ -1,9 +1,9 @@
-#ifndef INCLUDE_MATH_H
-#define INCLUDE_MATH_H
+#ifndef INCLUDE_GMATH_H
+#define INCLUDE_GMATH_H
 
 #include <cmath>
 
-namespace KevinMath
+namespace GMath
 {
     // Types
     struct Vec3
@@ -26,6 +26,7 @@ namespace KevinMath
         float m[16];
     };
 
+    // Vertex for local space tris
     struct Vertex
     {
         Vec3 points;
@@ -33,9 +34,19 @@ namespace KevinMath
 
     struct Triangle
     {
-        Vertex p1;
-        Vertex p2;
-        Vertex p3;
+        Vertex v[3];
+    };
+
+    // Vertex for transformed screen space triangles
+    struct ScreenVertex
+    {
+        int x;
+        int y;
+    };
+
+    struct ScreenTriangle
+    {
+        ScreenVertex v[3];
     };
 
     // Mat4 operations
@@ -65,6 +76,16 @@ namespace KevinMath
             m.m[12] * v.x + m.m[13] * v.y + m.m[14] * v.z + m.m[15] * v.w};
     }
 
+    Vec4 operator*(Vec4 const &v, float s)
+    {
+        return Vec4{v.x * s, v.y * s, v.z * s, v.w * s};
+    }
+
+    Vec4 operator/(Vec4 const &v, float s)
+    {
+        return Vec4{v.x / s, v.y / s, v.z / s, v.w / s};
+    }
+
     Vec4 operator+(Vec4 const &v1, Vec4 const &v2)
     {
         return Vec4{v1.x + v2.x, v1.y + v2.y, v1.z + v2.z, v1.w + v2.w};
@@ -78,11 +99,6 @@ namespace KevinMath
     Vec4 operator-(Vec4 const &v)
     {
         return Vec4{-v.x, -v.y, -v.z, -v.w};
-    }
-
-    Vec4 operator*(Vec4 const &v, float s)
-    {
-        return Vec4{v.x * s, v.y * s, v.z * s, v.w * s};
     }
 
     // Vec3 Operations
