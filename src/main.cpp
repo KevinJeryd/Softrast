@@ -8,7 +8,9 @@
 GMath::Vertex p1{3, 3, -3};
 GMath::Vertex p2{-3, 3, -3};
 GMath::Vertex p3{0, 0, -3};
-GMath::Triangle testTri{p1, p2, p3};
+
+uint32_t triangleColor = 0xFF32E300;
+GMath::Triangle testTri{p1, p2, p3, triangleColor};
 
 // TODO: Don't hardcode values later
 GMath::Mat4 createMVPMatrix(int winWidth, int winHeight)
@@ -47,17 +49,21 @@ int main()
 
     GMath::ScreenTriangle screenTri = Renderer::toScreenSpace(testTri, MVP, winWidth, winHeight);
 
+    // Calculate normals for shading
+    GMath::Vec3 lightDir = GMath::norm({0, 1, 1});
+    uint32_t color = Renderer::flatShade(testTri, lightDir);
+
     // Graphics draw loop
     bool running = true;
     while (running)
     {
         std::fill(ctx.pixels.begin(), ctx.pixels.end(), 0xFF000000);
 
-        Renderer::drawLine(ctx.pixels, winWidth, winHeight, screenTri.v[0].x, screenTri.v[0].y, screenTri.v[1].x, screenTri.v[1].y, 0xFFFFFFFF);
-        Renderer::drawLine(ctx.pixels, winWidth, winHeight, screenTri.v[1].x, screenTri.v[1].y, screenTri.v[2].x, screenTri.v[2].y, 0xFFFFFFFF);
-        Renderer::drawLine(ctx.pixels, winWidth, winHeight, screenTri.v[2].x, screenTri.v[2].y, screenTri.v[0].x, screenTri.v[0].y, 0xFFFFFFFF);
+        Renderer::drawLine(ctx.pixels, winWidth, winHeight, screenTri.v[0].x, screenTri.v[0].y, screenTri.v[1].x, screenTri.v[1].y, color);
+        Renderer::drawLine(ctx.pixels, winWidth, winHeight, screenTri.v[1].x, screenTri.v[1].y, screenTri.v[2].x, screenTri.v[2].y, color);
+        Renderer::drawLine(ctx.pixels, winWidth, winHeight, screenTri.v[2].x, screenTri.v[2].y, screenTri.v[0].x, screenTri.v[0].y, color);
 
-        Renderer::fillTriangle(screenTri, ctx.pixels, winWidth, winHeight, 0xFFFFFFFF);
+        Renderer::fillTriangle(screenTri, ctx.pixels, winWidth, winHeight, color);
 
         SDL_Event event;
         while (SDL_PollEvent(&event))

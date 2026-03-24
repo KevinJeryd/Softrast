@@ -207,4 +207,23 @@ namespace Renderer
             drawLineV(pixels, width, height, x0, y0, x1, y1, color);
         }
     }
+
+    uint32_t flatShade(GMath::Triangle const &tri, GMath::Vec3 const &lightDir)
+    {
+        GMath::Vec3 edge1 = tri.v[1].points - tri.v[0].points;
+        GMath::Vec3 edge2 = tri.v[2].points - tri.v[0].points;
+        GMath::Vec3 normal = GMath::norm(GMath::cross(edge1, edge2));
+
+        float lightAngle = GMath::dot(normal, lightDir);
+        lightAngle = (lightAngle + 1) / 2; // Remap from -1, 1 to 0, 1 range
+        float brightness = lightAngle * 255;
+
+        // Pack brightness into color
+        uint8_t r = ((tri.color >> 16) & 0xFF) * lightAngle;
+        uint8_t g = ((tri.color >> 8) & 0xFF) * lightAngle;
+        uint8_t b = ((tri.color) & 0xFF) * lightAngle;
+        uint32_t color = (0xFF << 24) | (r << 16) | (g << 8) | b;
+
+        return color;
+    }
 }

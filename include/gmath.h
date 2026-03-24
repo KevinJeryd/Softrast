@@ -35,6 +35,7 @@ namespace GMath
     struct Triangle
     {
         Vertex v[3];
+        uint32_t color;
     };
 
     // Vertex for transformed screen space triangles
