@@ -193,6 +193,65 @@ void drawLine(std::vector<uint32_t> &pixels, int width, int height, int x0, int 
     }
 }
 
+// https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/rasterization-stage.html
+void fillTriangle(GMath::ScreenTriangle const &tri, std::vector<uint32_t> &pixels, int const width, int const height, uint32_t color)
+{
+    // Define bounding box
+    int minX = std::min(tri.v[0].x, std::min(tri.v[1].x, tri.v[2].x));
+    int maxX = std::max(tri.v[0].x, std::max(tri.v[1].x, tri.v[2].x));
+    int minY = std::min(tri.v[0].y, std::min(tri.v[1].y, tri.v[2].y));
+    int maxY = std::max(tri.v[0].y, std::max(tri.v[1].y, tri.v[2].y));
+
+    // Check against screen bound
+    minX = std::max(minX, 0);
+    minY = std::max(minY, 0);
+    maxX = std::min(maxX, width - 1);
+    maxY = std::min(maxY, height - 1);
+
+    // Define delta score constants
+    // Edge0
+    int dE0_dx = -(tri.v[1].y - tri.v[0].y);
+    int dE0_dy = (tri.v[1].x - tri.v[0].x);
+
+    // Edge1
+    int dE1_dx = -(tri.v[2].y - tri.v[1].y);
+    int dE1_dy = (tri.v[2].x - tri.v[1].x);
+
+    // Edge2
+    int dE2_dx = -(tri.v[0].y - tri.v[2].y);
+    int dE2_dy = (tri.v[0].x - tri.v[2].x);
+
+    // Define initial score
+    int e0_row = (tri.v[1].x - tri.v[0].x) * (minY - tri.v[0].y) - (tri.v[1].y - tri.v[0].y) * (minX - tri.v[0].x);
+    int e1_row = (tri.v[2].x - tri.v[1].x) * (minY - tri.v[1].y) - (tri.v[2].y - tri.v[1].y) * (minX - tri.v[1].x);
+    int e2_row = (tri.v[0].x - tri.v[2].x) * (minY - tri.v[2].y) - (tri.v[0].y - tri.v[2].y) * (minX - tri.v[2].x);
+
+    for (int y = minY; y <= maxY; ++y)
+    {
+        int e0 = e0_row;
+        int e1 = e1_row;
+        int e2 = e2_row;
+
+        for (int x = minX; x <= maxX; ++x)
+        {
+            bool inside = (e0 >= 0 && e1 >= 0 && e2 >= 0) ||
+                          (e0 <= 0 && e1 <= 0 && e2 <= 0);
+            if (inside)
+            {
+                pixels[y * width + x] = color;
+            }
+
+            e0 += dE0_dx;
+            e1 += dE1_dx;
+            e2 += dE2_dx;
+        }
+
+        e0_row += dE0_dy;
+        e1_row += dE1_dy;
+        e2_row += dE2_dy;
+    }
+}
+
 int main()
 {
     // Setup SDL
@@ -214,6 +273,8 @@ int main()
         drawLine(ctx.pixels, winWidth, winHeight, screenTri.v[0].x, screenTri.v[0].y, screenTri.v[1].x, screenTri.v[1].y, 0xFFFFFFFF);
         drawLine(ctx.pixels, winWidth, winHeight, screenTri.v[1].x, screenTri.v[1].y, screenTri.v[2].x, screenTri.v[2].y, 0xFFFFFFFF);
         drawLine(ctx.pixels, winWidth, winHeight, screenTri.v[2].x, screenTri.v[2].y, screenTri.v[0].x, screenTri.v[0].y, 0xFFFFFFFF);
+
+        fillTriangle(screenTri, ctx.pixels, winWidth, winHeight, 0xFFFFFFFF);
 
         SDL_Event event;
         while (SDL_PollEvent(&event))
