@@ -101,6 +101,98 @@ GMath::ScreenTriangle toScreenSpace(GMath::Triangle const &tri, GMath::Mat4 cons
     return screenTri;
 }
 
+void drawLineH(std::vector<uint32_t> &pixels, int width, int height, int x0, int y0, int x1, int y1, uint32_t color)
+{
+    if (x0 > x1)
+    {
+        int tempX = x0;
+        x0 = x1;
+        x1 = tempX;
+
+        int tempY = y0;
+        y0 = y1;
+        y1 = tempY;
+    }
+
+    int dx = x1 - x0;
+    int dy = y1 - y0;
+
+    int dir = dy < 0 ? -1 : 1;
+    dy *= dir;
+
+    if (dx == 0)
+        return;
+
+    int p = 2 * dy - dx;
+    int y = y0;
+
+    for (int i = 0; i < dx + 1; ++i)
+    {
+        if (x0 + i >= 0 && x0 + i < width && y >= 0 && y < height)
+            pixels[(y * width) + (x0 + i)] = color;
+
+        if (p >= 0)
+        {
+            y += dir;
+            p = p - 2 * dx;
+        }
+        p = p + 2 * dy;
+    }
+}
+
+void drawLineV(std::vector<uint32_t> &pixels, int width, int height, int x0, int y0, int x1, int y1, uint32_t color)
+{
+    if (y0 > y1)
+    {
+        int tempX = x0;
+        x0 = x1;
+        x1 = tempX;
+
+        int tempY = y0;
+        y0 = y1;
+        y1 = tempY;
+    }
+
+    int dx = x1 - x0;
+    int dy = y1 - y0;
+
+    int dir = dx < 0 ? -1 : 1;
+    dx *= dir;
+
+    if (dy == 0)
+        return;
+
+    int p = 2 * dx - dy;
+    int x = x0;
+
+    for (int i = 0; i < dy + 1; ++i)
+    {
+        if (x >= 0 && x < width && y0 + i >= 0 && y0 + i < height)
+            pixels[((y0 + i) * width) + x] = color;
+
+        if (p >= 0)
+        {
+            x += dir;
+            p = p - 2 * dy;
+        }
+        p = p + 2 * dx;
+    }
+}
+
+// https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
+// https://www.youtube.com/watch?v=CceepU1vIKo
+void drawLine(std::vector<uint32_t> &pixels, int width, int height, int x0, int y0, int x1, int y1, uint32_t color)
+{
+    if (std::abs(x1 - x0) > std::abs(y1 - y0))
+    {
+        drawLineH(pixels, width, height, x0, y0, x1, y1, color);
+    }
+    else
+    {
+        drawLineV(pixels, width, height, x0, y0, x1, y1, color);
+    }
+}
+
 int main()
 {
     // Setup SDL
@@ -119,14 +211,9 @@ int main()
     {
         std::fill(ctx.pixels.begin(), ctx.pixels.end(), 0xFF000000);
 
-        for (auto const &screenVert : screenTri.v)
-        {
-            if (screenVert.x < 0 || screenVert.x >= winWidth)
-                continue;
-            if (screenVert.y < 0 || screenVert.y >= winHeight)
-                continue;
-            ctx.pixels[screenVert.y * winWidth + screenVert.x] = 0xFFFF0000;
-        }
+        drawLine(ctx.pixels, winWidth, winHeight, screenTri.v[0].x, screenTri.v[0].y, screenTri.v[1].x, screenTri.v[1].y, 0xFFFFFFFF);
+        drawLine(ctx.pixels, winWidth, winHeight, screenTri.v[1].x, screenTri.v[1].y, screenTri.v[2].x, screenTri.v[2].y, 0xFFFFFFFF);
+        drawLine(ctx.pixels, winWidth, winHeight, screenTri.v[2].x, screenTri.v[2].y, screenTri.v[0].x, screenTri.v[0].y, 0xFFFFFFFF);
 
         SDL_Event event;
         while (SDL_PollEvent(&event))
