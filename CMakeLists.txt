@@ -9,6 +9,7 @@ add_executable(softrast)
 target_sources(softrast PRIVATE 
                 src/main.cpp
                 src/renderer.cpp
+                src/objParser.cpp
                 )
 
 target_include_directories(softrast PRIVATE include)

@@ -216,12 +216,14 @@ namespace Renderer
 
         float lightAngle = GMath::dot(normal, lightDir);
         lightAngle = (lightAngle + 1) / 2; // Remap from -1, 1 to 0, 1 range
-        float brightness = lightAngle * 255;
+
+        float ambient = 0.1f;
+        float brightness = (ambient + (1.0f - ambient) * lightAngle);
 
         // Pack brightness into color
-        uint8_t r = ((tri.color >> 16) & 0xFF) * lightAngle;
-        uint8_t g = ((tri.color >> 8) & 0xFF) * lightAngle;
-        uint8_t b = ((tri.color) & 0xFF) * lightAngle;
+        uint8_t r = ((tri.color >> 16) & 0xFF) * brightness;
+        uint8_t g = ((tri.color >> 8) & 0xFF) * brightness;
+        uint8_t b = ((tri.color) & 0xFF) * brightness;
         uint32_t color = (0xFF << 24) | (r << 16) | (g << 8) | b;
 
         return color;

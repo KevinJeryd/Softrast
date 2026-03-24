@@ -4,6 +4,7 @@
 #include <iostream>
 #include "../include/gmath.h"
 #include "../include/renderer.h"
+#include "../include/objParser.h"
 
 GMath::Vertex p1{3, 3, -3};
 GMath::Vertex p2{-3, 3, -3};
@@ -16,7 +17,7 @@ GMath::Triangle testTri{p1, p2, p3, triangleColor};
 GMath::Mat4 createMVPMatrix(int winWidth, int winHeight)
 {
     // Setup model matrix
-    GMath::Vec3 const &translation{1, 1, 0};
+    GMath::Vec3 const &translation{0, 0, 0};
     GMath::Vec3 const &rotation{0, 0, 0};
     GMath::Vec3 const &scale{1, 1, 1};
     GMath::Mat4 modelMatrix = GMath::modelMatrix(translation, rotation, scale);
@@ -37,8 +38,12 @@ GMath::Mat4 createMVPMatrix(int winWidth, int winHeight)
     return projMatrix * viewMatrix * modelMatrix;
 }
 
-int main()
+int main(int argc, char *argv[])
 {
+    std::string path = argc > 1 ? argv[1] : "bunny.obj";
+    std::vector<GMath::Triangle> triangles = ObjParser::parseObj(path);
+    GMath::Vec3 lightDir = GMath::norm({0, 1, 1});
+
     // Setup SDL
     constexpr int winWidth = 800;
     constexpr int winHeight = 600;
@@ -47,23 +52,22 @@ int main()
     // Combine to one matrix
     GMath::Mat4 MVP = createMVPMatrix(winWidth, winHeight);
 
-    GMath::ScreenTriangle screenTri = Renderer::toScreenSpace(testTri, MVP, winWidth, winHeight);
-
-    // Calculate normals for shading
-    GMath::Vec3 lightDir = GMath::norm({0, 1, 1});
-    uint32_t color = Renderer::flatShade(testTri, lightDir);
+    std::vector<GMath::ScreenTriangle> screenTris;
+    for (auto const &tri : triangles)
+    {
+        screenTris.push_back(Renderer::toScreenSpace(tri, MVP, winWidth, winHeight));
+    }
 
     // Graphics draw loop
     bool running = true;
     while (running)
     {
         std::fill(ctx.pixels.begin(), ctx.pixels.end(), 0xFF000000);
-
-        Renderer::drawLine(ctx.pixels, winWidth, winHeight, screenTri.v[0].x, screenTri.v[0].y, screenTri.v[1].x, screenTri.v[1].y, color);
-        Renderer::drawLine(ctx.pixels, winWidth, winHeight, screenTri.v[1].x, screenTri.v[1].y, screenTri.v[2].x, screenTri.v[2].y, color);
-        Renderer::drawLine(ctx.pixels, winWidth, winHeight, screenTri.v[2].x, screenTri.v[2].y, screenTri.v[0].x, screenTri.v[0].y, color);
-
-        Renderer::fillTriangle(screenTri, ctx.pixels, winWidth, winHeight, color);
+        for (int i = 0; i < triangles.size(); i++)
+        {
+            uint32_t color = Renderer::flatShade(triangles[i], lightDir);
+            Renderer::fillTriangle(screenTris[i], ctx.pixels, winWidth, winHeight, color);
+        }
 
         SDL_Event event;
         while (SDL_PollEvent(&event))
